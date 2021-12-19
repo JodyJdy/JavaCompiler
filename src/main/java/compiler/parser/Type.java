@@ -1,8 +1,9 @@
 package compiler.parser;
 
+import compiler.ast.Expr;
 import compiler.enums.Tag;
 
-public class Type {
+public class Type extends Expr {
     /**
      * 类名
      */

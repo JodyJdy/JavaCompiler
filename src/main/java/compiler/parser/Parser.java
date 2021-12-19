@@ -105,16 +105,20 @@ public  class Parser {
      * 处理类
      * @param isForType  第一次将所有类的类型进行加载，之后再进行完整的分析
      */
-    public void clazz(boolean isForType){
+    public ClassNode clazz(boolean isForType){
+        ClassNode classNode = new ClassNode();
         //访问权限修饰符
         if(isAccessControl()){
+            classNode.setAccess(look.tag);
             move();
         }
         //class
         match(CLASS);
         // 类名称
         if(look.tag == ID){
-            TypeMap.addType(((Word)look).getStr());
+            String name = ((Word)look).getStr();
+            TypeMap.addType(name);
+            classNode.setName(name);
             move();
         }
 
@@ -122,38 +126,47 @@ public  class Parser {
         if(look.tag == EXTENDS){
             match(EXTENDS);
             if(look.tag == ID){
-                TypeMap.addType(((Word)look).getStr());
+                String name = ((Word)look).getStr();
+                TypeMap.addType(name);
+                classNode.setExtendsC(TypeMap.type(look));
                 move();
             }
         }
         //判断有无接口继承
         if(look.tag == IMPLEMENTS){
             match(IMPLEMENTS);
+            List<Type> impls = new ArrayList<>();
             while(look.tag != BIG_LEFT){
                 TypeMap.addType(((Word)look).getStr());
+                impls.add(TypeMap.type(look));
                 move();
                 match(SPLIT);
             }
+            classNode.setImpls(impls);
         }
         if(isForType){
-            return;
+            return null;
         }
         match(BIG_LEFT);
-        //处理类的内容
-        classBody();
+        ClassBody classBody = new ClassBody();
+        classBody(classBody);
+        classNode.setClassBody(classBody);
         match(BIG_RIGHT);
+        return classNode;
     }
 
     /**
      * 处理类的内容，主要包括
      * 变量声明， 函数声明， 代码块
      */
-    public void classBody(){
+    public void classBody(ClassBody classBody){
         if(look.tag == BIG_RIGHT){
             return;
         }
+        Tag access = null;
         // 访问修饰符
         if(isAccessControl()){
+            access = look.tag;
             move();
         }
         // static 或者 final
@@ -168,19 +181,23 @@ public  class Parser {
         if(look.tag == BIG_LEFT){
             //代码块
             match(BIG_LEFT);
-            stmts();
+            classBody.addBlock(new Block(stmts(),isStatic));
             match(BIG_RIGHT);
             //继续处理 classBody
-            classBody();
+            classBody(classBody);
             return;
         }
-        //匹配类型，此处的ID 其实就是 class的一种
+
+        Token pre = null;
+        //匹配类型
         if(TypeMap.contains(look)){
+            pre = look;
             move();
         }
+        Type typeExpr;
         //有数组,数组可能是函数返回值也可能是变量类型，s用i记录数组的维度
-        int i = 0;
         if(look.tag == MID_LEFT){
+            int i = 0;
             for (;;){
                 match(MID_LEFT);
                 match(MID_RIGHT);
@@ -189,53 +206,67 @@ public  class Parser {
                     break;
                 }
             }
+            typeExpr = TypeMap.arrayType(pre,i);
+        } else{
+            typeExpr = TypeMap.type(pre);
         }
         //变量名或者，方法名
-        match(ID);
+        String varName;
+        Word word = (Word)look;
+        varName = word.getStr();
+        move();
+        List<FieldDeclare> fieldDeclares = new ArrayList<>();
         //变量声明支持多个
         while (look.tag == ASSIGN || look.tag == SPLIT){
             if(look.tag == ASSIGN){
                 match(ASSIGN);
-                expr();
+                fieldDeclares.add(new FieldDeclare(access,typeExpr,varName, expr()));
             } else{
                 //处理下一个变量
                 move();
+                fieldDeclares.add(new FieldDeclare(access,typeExpr,varName,null));
                 match(ID);
             }
         }
+        //字段声明添加进去
+        if(!fieldDeclares.isEmpty()){
+            classBody.addField(new FieldsDeclare(fieldDeclares));
+        }
         //如果是 ; 变量声明结束
         if(look.tag == END){
-            System.out.println("变量声明");
             move();
-            classBody();
+            classBody(classBody);
             return;
         }
         //方法声明
         if(look.tag == S_LEFT){
-            System.out.println("方法声明");
             match(S_LEFT);
             //形参列表
-            virtualArgs();
+            VirtualArgs virtualArgs = virtualArgs();
             match(S_RIGHT);
-            method();
-            classBody();
+            Stmt me = method();
+            classBody.addMethod(new MethodDeclare(typeExpr, access, isStatic, virtualArgs, me));
+            classBody(classBody);
         }
     }
-    public void method(){
+    public Stmt method(){
+        Stmt result;
         match(BIG_LEFT);
-        stmts();
+        result = stmts();
         match(BIG_RIGHT);
+        return result;
     }
 
     /**
      * 语句列表
      */
-    public void stmts(){
+    public Stmt stmts(){
         if(look.tag == BIG_RIGHT){
-            return;
+            return null;
         }
         stmt();
         stmts();
+        return null;
     }
 
     /**
@@ -308,32 +339,57 @@ public  class Parser {
     /**
      * 赋值表达式
      */
-    public void assign(){
+    public Stmt assign(){
         //变量定义或者带有变量定义的赋值表达式
         if(TypeMap.contains(look)){
+            Token pre = look;
             move();
-            match(ID);
+            Expr typeExpr;
+            //含有数组
+            if(look.tag == MID_LEFT){
+                int d = 0;
+                while(look.tag == MID_LEFT){
+                    match(MID_LEFT);
+                    match(MID_RIGHT);
+                    d++;
+                }
+                typeExpr = TypeMap.arrayType(pre,d);
+            } else{
+                typeExpr = TypeMap.type(pre);
+            }
+            List<LocalVarDeclare>varDeclares = new ArrayList<>();
+            String varName;
+            Word word = (Word)look;
+            varName = word.getStr();
+            move();
             //变量声明支持多个
             while (look.tag == ASSIGN || look.tag == SPLIT){
                 if(look.tag == ASSIGN){
                     match(ASSIGN);
-                    expr();
+                    varDeclares.add(new LocalVarDeclare(typeExpr,varName,expr()));
                 } else{
+                    varDeclares.add(new LocalVarDeclare(typeExpr,varName,null));
                     //处理下一个变量
                     move();
-                    match(ID);
+                    word = (Word)look;
+                    varName = word.getStr();
+                    move();
                 }
             }
             if(look.tag == END){
                 match(END);
-                return;
+                return new LocalVarsDeclare(varDeclares);
             }
         }
         //赋值表达式，用postfix作为左边，虽然他的范围要更加广一点
-        postfix();
-        //跳过的这个符号可以用来支持 += -= *= /= ....
+        Expr left = postfix();
+        //跳过等号
         move();
-        expr();
+        Expr right = expr();
+        if(look.tag == END){
+            match(END);
+        }
+        return new Assign(left, right);
     }
     /**
      * 表达式
@@ -599,7 +655,7 @@ public  class Parser {
     /**
      * 函数形参列表
      */
-    public void virtualArgs(){
+    public VirtualArgs virtualArgs(){
         //基本数据类型 或对象类型
         if(TypeMap.contains(look)){
             move();
@@ -614,6 +670,7 @@ public  class Parser {
                 }
             }
         }
+        return null;
     }
 
 }

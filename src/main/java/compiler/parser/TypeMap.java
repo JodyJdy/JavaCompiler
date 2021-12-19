@@ -2,6 +2,7 @@ package compiler.parser;
 
 import compiler.enums.Tag;
 import compiler.lexer.Token;
+import compiler.lexer.Word;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -47,10 +48,18 @@ public class TypeMap {
             default:return false;
         }
     }
-    public static Type generateType(String type){
-        if(typeSet.contains(type)){
-            return new Type(type);
+    public static Type type(Token token){
+        if(isBasic(token.tag)){
+            return new Type(token.tag);
         }
-        return null;
+        Word word = (Word)token;
+        return new Type(word.getStr());
+    }
+    public static Type arrayType(Token token,int dimen){
+        if(isBasic(token.tag)){
+            return new ArrayType(token.tag,dimen);
+        }
+        Word word = (Word)token;
+        return new ArrayType(word.getStr(),dimen);
     }
 }

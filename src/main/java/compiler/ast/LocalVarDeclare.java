@@ -1,15 +1,9 @@
 package compiler.ast;
 
-import compiler.enums.Tag;
-
 /**
- * 类字段声明
+ * 局部变量声明
  */
-public class FieldDeclare extends Node {
-    /**
-     * Tag 访问权限
-     */
-    private final Tag access;
+public class LocalVarDeclare extends Stmt  {
     /**
      * 类型声明
      */
@@ -23,8 +17,7 @@ public class FieldDeclare extends Node {
      */
     private final Expr initValue;
 
-    public FieldDeclare(Tag access, Expr typeExpr, String varName, Expr initValue) {
-        this.access = access;
+    public LocalVarDeclare(Expr typeExpr, String varName, Expr initValue) {
         this.typeExpr = typeExpr;
         this.varName = varName;
         this.initValue = initValue;
