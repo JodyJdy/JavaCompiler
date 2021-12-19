@@ -166,6 +166,7 @@ public class Lexer {
             }
             return new Real(x);
         }
+        //标识符
         if (Character.isLetter(peek) || peek == Tag.UNDER_LINE.ch) {
             StringBuilder b = new StringBuilder();
             do {
@@ -178,6 +179,24 @@ public class Lexer {
             } else{
                 return new Word(result);
             }
+        }
+        //字符串
+        if(peek == Tag.D_MARK.ch){
+            readch();
+            StringBuilder b = new StringBuilder();
+            do {
+                b.append(peek);
+                readch();
+            } while (peek != Tag.D_MARK.ch);
+            readch();
+            return new Str(b.toString());
+        }
+        //字符
+        if(peek == Tag.MARK.ch){
+            readch();
+            char ch = peek;
+            readch(Tag.MARK.ch);
+            return new Ch(ch);
         }
         peek = ' ';
         return new Token(null);

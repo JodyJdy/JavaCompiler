@@ -2,13 +2,15 @@
 
 package compiler.parser;
 
-import com.sun.org.apache.regexp.internal.RE;
+import compiler.ast.*;
 import compiler.enums.Tag;
 import compiler.lexer.Lexer;
 import compiler.lexer.Token;
 import compiler.lexer.Word;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static compiler.enums.Tag.*;
 
@@ -336,26 +338,40 @@ public  class Parser {
     /**
      * 表达式
      */
-    public void expr(){
+    public Expr expr(){
+        Expr expr = null;
         // 创建对象数组， 创建对象等同于方法调用
         if(look.tag == NEW){
             match(NEW);
-            match(ID);
+            Token type = look;
+            if(look.tag == ID || isBasic()){
+                move();
+            }
             if(look.tag == S_LEFT){
                 match(S_LEFT);
-                args();
+                Args objectArgs = args();
+                Word word = (Word)type;
+                expr = new NewObjectExpr(word.getStr(),objectArgs);
             //数组创建
             } else if(look.tag == MID_LEFT){
+                List<Expr> arrayArgs = new ArrayList<>();
                 while (look.tag == MID_LEFT){
                     match(MID_LEFT);
-                    expr();
+                    arrayArgs.add(expr());
                     match(MID_RIGHT);
                 }
+                if(type.tag == ID){
+                    expr = new NewArrayExpr(((Word)type).getStr(),arrayArgs);
+                } else{
+                    expr = new NewArrayExpr(type.tag,arrayArgs);
+                }
+
             }
 
         } else {
-            expr10();
+            expr = expr10();
         }
+        return expr;
     }
 
     /**
@@ -363,191 +379,222 @@ public  class Parser {
      * 三元表达式
      */
 
-    public void expr10(){
-        expr9();
+    public Expr expr10(){
+        Expr expr = expr9();
         if(look.tag == QUES){
             match(QUES);
-            expr9();
+            Expr trueExpr = expr9();
             match(Mu);
-            expr9();
+            Expr falseExpr = expr9();
+            return new ChoseExpr(expr,trueExpr,falseExpr);
         }
+        return expr;
     }
 
     /**
      * bool表达式最上层  ||
      */
-    public void expr9(){
-        expr8();
+    public Expr expr9(){
+        Expr expr = expr8();
         while (look.tag == OR){
+            Tag tag = look.tag;
             move();
-            expr8();
+            expr = new LogicExpr(expr,expr8(),tag);
         }
+        return expr;
 
     }
     /**
      * bool表达式 第二层 &&
      */
-    public void expr8(){
-        expr7();
+    public Expr expr8(){
+        Expr expr = expr7();
         while(look.tag == AND){
+            Tag tag = look.tag;
             move();
-            expr7();
+            expr = new LogicExpr(expr, expr7(), tag);
         }
+        return expr;
 
     }
 
     /**
      * 关系表达式
      */
-    public void expr7(){
-        expr6();
+    public Expr expr7(){
+        Expr expr = expr6();
         while(isRelation()){
+            Tag tag = look.tag;
             move();
-            expr6();
+            expr = new RelExpr(expr,expr6(),tag);
         }
+        return expr;
     }
 
     /**
      *  位运算 |
      */
-    public void expr6(){
-        expr5();
+    public Expr expr6(){
+        Expr expr = expr5();
         while(look.tag == BITOR){
             move();
-            expr5();
+            expr = new BinaryExpr(look.tag,expr,expr5());
         }
+        return expr;
     }
     /**
      *  位运算 ^
      */
-    public void expr5(){
-        expr4();
+    public Expr expr5(){
+        Expr expr = expr4();
         while (look.tag == XOR){
             move();
-            expr4();
+            expr = new BinaryExpr(look.tag,expr,expr4());
         }
+        return expr;
     }
     /**
      *  位运算 &
      */
-    public void expr4(){
-        expr3();
+    public Expr expr4(){
+        Expr expr = expr3();
         while(look.tag == BITAND){
+            Tag tag = look.tag;
             move();
-            expr3();
+            expr = new BinaryExpr(tag,expr,expr3());
         }
+        return expr;
     }
 
     /**
      * 移位操作
      */
-    public void expr3(){
-        expr2();
+    public Expr expr3(){
+        Expr expr = expr2();
         while(look.tag == LSHIFT || look.tag == RSHIFT){
+            Tag tag = look.tag;
             move();
-            expr2();
+            expr = new BinaryExpr(tag,expr,expr2());
         }
+        return expr;
     }
 
     /**
      * 加减操作
      */
-    public void expr2(){
-        expr1();
+    public Expr expr2(){
+        Expr expr = expr1();
         while(look.tag == ADD || look.tag == SUB){
+            Tag tag = look.tag;
             move();
-            expr1();
+            expr = new BinaryExpr(tag,expr, expr1());
         }
+        return expr;
     }
-    public void expr1(){
-        term();
+    public Expr expr1(){
+        Expr expr = term();
         while(look.tag == MUL || look.tag == DIV || look.tag == MOD){
+            Tag tag = look.tag;
             move();
-            term();
+            expr = new BinaryExpr(tag,expr,term());
         }
+        return expr;
     }
 
     /**
-     * 项
+     * 项 以及前缀处理相关的
      */
-    public void term(){
+    public Expr term(){
         switch (look.tag){
             case ADDADD:
             case SUBSUB:
             case ADD:
             case SUB:
-            case NOT:case BITNOT:move();term();
-            default:postfix();
+            case NOT:
+            case BITNOT:
+                Tag tag = look.tag;
+                move();
+                return new TermExpr(tag,term());
+            default:return postfix();
         }
     }
 
     /**
      * 后缀
      */
-    public void postfix(){
-        primary();
-        if(look.tag == ADDADD){
-            move();
-        } else if(look.tag == SUBSUB){
+    public Expr postfix(){
+        Expr expr = primary();
+        if(look.tag == ADDADD || look.tag == SUBSUB){
+            expr = new PostfixExpr(expr,look.tag);
             move();
         } else {
             //数组调用，多维
             if(look.tag == MID_LEFT){
+                List<Expr> arrayArgs = new ArrayList<>();
                 while (look.tag == MID_LEFT){
                     match(MID_LEFT);
-                    expr();
+                    arrayArgs.add(expr());
                     match(MID_RIGHT);
                 }
-                return;
+                expr = new PostfixExpr(expr,arrayArgs);
             }
             //函数调用
             if(look.tag == S_LEFT){
                 match(S_LEFT);
-                args();
+                expr = new PostfixExpr(expr,args());
                 match(S_RIGHT);
-                //函数调用没有结束
-                if(look.tag == POINT){
-                    postfix();
-                    return;
-                }
             }
-
-            //字段引用
+            // .运算符
             if(look.tag == POINT){
                 move();
-                postfix();
-                return;
+                expr = new PostfixExpr(expr,postfix());
             }
         }
+        return expr;
     }
 
     /**
-     * 代表各种量
+     * 代表各种量，也可以是类型 ，因为静态变量支持 类型.xx 访问
      */
-    public void primary(){
-        if(look.tag == ID || look.tag == NUM || look.tag == REAL){
+    public Expr primary(){
+        Expr result = null;
+        if(look.tag == ID || look.tag == NUM || look.tag == REAL
+                || TypeMap.contains(look) || look.tag == STR || look.tag == CH || look.tag == TRUE
+                || look.tag == FALSE || look.tag == THIS || look.tag == SUPER || look.tag == NULL){
+            if(TypeMap.contains(look) && !isBasic()){
+                Word word = (Word)look;
+                result =  new TypeExpr(new Type(word.getStr()));
+            } else if(look.tag == ID){
+                Word word = (Word)look;
+                result = new VariableExpr(word.getStr());
+            } else{
+                result = new ConstantExpr(look);
+            }
             move();
         } else if(look.tag == S_LEFT){
             match(S_LEFT);
-            expr();
+            result = expr();
             match(S_RIGHT);
         }
+        return result;
     }
 
 
     /**
      * 函数实参列表
      */
-    public void args(){
+    public Args args(){
         //无参函数
         if(look.tag == S_RIGHT){
-            return;
+            return new Args();
         }
-        expr();
+        List<Expr> exprs = new ArrayList<>();
+        exprs.add(expr());
         while(look.tag == SPLIT){
             match(SPLIT);
-            expr();
+            exprs.add(expr());
         }
+        return new Args(exprs);
     }
     /**
      * 函数形参列表

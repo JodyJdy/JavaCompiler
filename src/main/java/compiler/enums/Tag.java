@@ -44,7 +44,7 @@ public enum Tag {
     /**
      * 分割符
      */
-    END(';'),SPLIT(','),Mu(':'),QUES('?'),
+    END(';'),SPLIT(','),Mu(':'),QUES('?'),D_MARK('"'),MARK('\''),
     /**
      * 界定符
      */
@@ -56,7 +56,7 @@ public enum Tag {
     /**
      * 含有语义的量
      */
-     ID,NUM,REAL;
+     ID,NUM,REAL,STR,CH;
 
     private String str = null;
     public Character ch = null;

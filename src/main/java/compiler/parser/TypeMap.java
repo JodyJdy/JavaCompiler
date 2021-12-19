@@ -32,4 +32,25 @@ public class TypeMap {
     public static boolean contains(Token token){
         return typeSet.contains(token.tag.getStr());
     }
+    public static Type generateType(Token token){
+        if(isBasic(token.tag)) {
+            return new Type(token.tag);
+        }
+        return null;
+    }
+    public static boolean isBasic(Tag tag){
+        switch (tag){
+            case BYTE:
+            case CHAR:
+            case SHORT:
+            case INT:case LONG:case FLOAT:case DOUBLE:case VOID: case BOOL:return true;
+            default:return false;
+        }
+    }
+    public static Type generateType(String type){
+        if(typeSet.contains(type)){
+            return new Type(type);
+        }
+        return null;
+    }
 }
