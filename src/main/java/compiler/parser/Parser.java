@@ -272,67 +272,94 @@ public  class Parser {
     /**
      * 单个语句
      */
-    public void stmt(){
+    public Stmt stmt(){
         switch (look.tag){
-            case END:move();return;
+            case END:move();return Stmt.NULL;
             case IF:
                 match(IF);
                 match(S_LEFT);
-                expr();
+                Expr condition = expr();
                 match(S_RIGHT);
-                stmt();
+                Stmt thenStmt = stmts();
+                Stmt elseStmt = null;
                 //能够解决悬空else的问题
                 if(look.tag == ELSE){
                     match(ELSE);
-                    stmt();
+                    elseStmt = stmt();
                 }
-                break;
+                return new IfStmt(condition,thenStmt,elseStmt);
             case FOR:
                 match(FOR);
                 match(S_LEFT);
-                assign();
+                Stmt as1;
+                if(look.tag == END){
+                    as1 = null;
+                } else{
+                    as1 = assign();
+                }
                 match(END);
-                expr();
+                Expr cond = expr();
                 match(END);
-                assign();
+                Stmt as2;
+                if(look.tag == END){
+                    as2 = null;
+                } else{
+                    as2 = assign();
+                }
                 match(S_RIGHT);
-                stmt();
-                break;
+                return new ForStmt(as1,cond,as2,stmt());
             case WHILE:
                 match(WHILE);
                 match(S_LEFT);
-                expr();
+                cond = expr();
                 match(S_RIGHT);
-                stmt();
-                break;
-            case SWITCH:
-                match(SWITCH);
-                // postfix包含了 a.b.c这种
-                postfix();
-                match(BIG_LEFT);
-                while (look.tag == CASE){
-                    match(CASE);
-                    match(Mu);
-                    if(look.tag == CASE || look.tag == DEFATULT){
-                        continue;
-                    }
-                    stmt();
-                }
-                if(look.tag == DEFATULT){
-                    match(DEFATULT);
-                    match(Mu);
-                    if(look.tag != BIG_RIGHT){
-                        stmt();
-                    }
-                }
-                match(BIG_RIGHT);
-                break;
-            case DO:match(DO);stmt();match(WHILE);match(S_LEFT);expr();match(S_RIGHT);match(END);break;
-            case BREAK:match(BREAK);match(END);break;
-            case CONTINUE:match(CONTINUE);match(END);break;
-            case BIG_LEFT:match(BIG_LEFT);stmts();match(BIG_RIGHT);break;
+                return new WhileStmt(cond,stmt());
+                //暂不处理switch，鸡儿麻烦
+//            case SWITCH:
+//                match(SWITCH);
+//                // postfix包含了 a.b.c这种
+//                postfix();
+//                match(BIG_LEFT);
+//                while (look.tag == CASE){
+//                    match(CASE);
+//                    match(Mu);
+//                    if(look.tag == CASE || look.tag == DEFATULT){
+//                        continue;
+//                    }
+//                    stmt();
+//                }
+//                if(look.tag == DEFATULT){
+//                    match(DEFATULT);
+//                    match(Mu);
+//                    if(look.tag != BIG_RIGHT){
+//                        stmt();
+//                    }
+//                }
+//                match(BIG_RIGHT);
+//                break;
+            case DO:
+                match(DO);
+                Stmt doBody = stmt();
+                match(WHILE);
+                match(S_LEFT);
+                cond = expr();
+                match(S_RIGHT);
+                match(END);
+                return new DoStmt(doBody,cond);
+            case BREAK:match(BREAK);match(END);return new BreakStmt();
+            case CONTINUE:match(CONTINUE);match(END);return new ContinueStmt();
+            case BIG_LEFT:match(BIG_LEFT);Stmt stmt = stmts();match(BIG_RIGHT);return stmt;
+            case RETURN:match(RETURN);
+            Stmt result;
+            if(look.tag == END){
+                result = new ReturnStmt(null);
+            } else{
+                result = new ReturnStmt(expr());
+            }
+            match(END);
+            return result;
             //变量声明，变量赋值
-            default:break;
+            default:return assign();
         }
     }
 
