@@ -735,7 +735,7 @@ public class IRGenerator {
         env = newEnv;
         //如果不是静态方法,需要把this添加到变量表里面
         if(!methodDeclare.isStatic()){
-            env.addVar(Tag.THIS.getStr(),new Type(classNode.getName()));
+            env.addVar(Tag.THIS.getStr(),classNode.getType());
         }
         //将函数的参数加入到局部变量表里面
         for(VirtualArg virtualArg : methodDeclare.getVirtualArgs().getVirtualArgs()){

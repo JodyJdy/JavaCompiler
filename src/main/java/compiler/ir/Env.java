@@ -57,7 +57,7 @@ public class Env {
            Env temp = this;
            while(temp.prev != null){
                //找到变量
-               if(vars.containsKey(varName)){
+               if(temp.vars.containsKey(varName)){
                    int v = 0;
                    for(Map.Entry<String,Type> entry : temp.vars.entrySet()){
                        if(entry.getKey().equals(varName)){
