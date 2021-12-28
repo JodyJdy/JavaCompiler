@@ -12,4 +12,8 @@ public class Args extends Node {
     public Args(){
         this.exprs = new ArrayList<>();
     }
+
+    public List<Expr> getExprs() {
+        return exprs;
+    }
 }

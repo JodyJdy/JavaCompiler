@@ -1,13 +1,17 @@
 package compiler.ast;
 
+import compiler.check.Checker;
+import compiler.check.TypeChecker;
 import compiler.enums.Tag;
+import compiler.ir.Generator;
+import compiler.ir.IRGenerator;
 
 import java.util.List;
 
 /**
  * 创建数组
  */
-public class NewArrayExpr extends Expr {
+public class NewArrayExpr extends Expr implements Generator, Checker {
     /**
      * 类
      */
@@ -29,5 +33,28 @@ public class NewArrayExpr extends Expr {
     public NewArrayExpr(Tag tag, List<Expr> array) {
         this.tag = tag;
         this.array = array;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public Tag getTag() {
+        return tag;
+    }
+
+    public List<Expr> getArray() {
+        return array;
+    }
+
+    @Override
+    public void generate(IRGenerator irGenerator) {
+        irGenerator.visit(this);
+    }
+
+    @Override
+    public Type check(TypeChecker checker) {
+        checker.visit(this);
+        return super.check(checker);
     }
 }

@@ -4,34 +4,26 @@ package compiler.lexer;
 
 import compiler.enums.Tag;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author
  * @date 2021/12/18
  **/
 
 public class Lexer {
     /**
-     * 代码行数
-     */
-    public static int line = 1;
-
-    /**
      * 缓存不变的 Token
      */
-    private static Map<String,Token> cacheToken = new HashMap<String, Token>(32);
+    private static Map<String, Token> cacheToken = new HashMap<>(32);
+
     static {
-        for(Tag tag : Tag.values()){
-            if(tag.getStr() != null){
-                cacheToken.put(tag.getStr(),new Token(tag));
-            } else if(tag.getCh() != null){
-                cacheToken.put(tag.getCh(),new Token(tag));
+        for (Tag tag : Tag.values()) {
+            if (tag.getStr() != null) {
+                cacheToken.put(tag.getStr(), new Token(tag));
+            } else if (tag.getCh() != null) {
+                cacheToken.put(tag.getCh(), new Token(tag));
             }
         }
     }
@@ -44,11 +36,10 @@ public class Lexer {
      * 字符流
      */
     private final Reader reader;
-    public Lexer(){
-        reader = new InputStreamReader(System.in);
-    }
-    public Lexer(InputStream inputStream){
-        reader = new InputStreamReader(inputStream);
+
+
+    public Lexer(File file) throws FileNotFoundException {
+        reader = new FileReader(file);
     }
 
     /**
@@ -57,6 +48,7 @@ public class Lexer {
     private void readch() throws IOException {
         peek = (char) reader.read();
     }
+
     /**
      * 读取指定的字符
      */
@@ -72,13 +64,10 @@ public class Lexer {
     /**
      * 生成 Token
      */
-    public Token scan() throws IOException{
-        //处理换行
+    public Token scan() throws IOException {
+        //处理不可见字符
         for (; ; readch()) {
-            if (peek == ' ' || peek == '\t') {
-            } else if (peek == '\n') {
-                line = line + 1;
-            } else {
+            if (peek != ' ' && peek != '\t' && peek != '\n' && peek != '\r') {
                 break;
             }
         }
@@ -110,42 +99,43 @@ public class Lexer {
                 }
             case '<':
                 readch();
-                if(peek == Tag.ASSIGN.ch){
+                if (peek == Tag.ASSIGN.ch) {
                     return new Token(Tag.LE);
-                } else if(peek == Tag.LI.ch){
+                } else if (peek == Tag.LI.ch) {
                     return new Token(Tag.LSHIFT);
-                } else{
+                } else {
                     return new Token(Tag.LI);
                 }
             case '>':
                 readch();
-                if(peek == Tag.ASSIGN.ch){
+                if (peek == Tag.ASSIGN.ch) {
                     return new Token(Tag.GE);
-                } else if(peek == Tag.GI.ch){
+                } else if (peek == Tag.GT.ch) {
                     return new Token(Tag.RSHIFT);
-                } else{
-                    return new Token(Tag.GI);
+                } else {
+                    return new Token(Tag.GT);
                 }
             case '+':
-                if(readch(Tag.ADD.ch)){
+                if (readch(Tag.ADD.ch)) {
                     return new Token(Tag.ADDADD);
-                } else{
+                } else {
                     return new Token(Tag.ADD);
                 }
             case '-':
-                if(readch(Tag.SUB.ch)){
+                if (readch(Tag.SUB.ch)) {
                     return new Token(Tag.SUBSUB);
-                } else{
+                } else {
                     return new Token(Tag.SUB);
                 }
-            default:break;
+            default:
+                break;
         }
-        if(cacheToken.containsKey(String.valueOf(peek))){
+        if (cacheToken.containsKey(String.valueOf(peek))) {
             char tempPeek = peek;
             readch();
             return cacheToken.get(String.valueOf(tempPeek));
         }
-       //处理数字
+        //处理数字
         if (Character.isDigit(peek) || peek == Tag.POINT.ch) {
             int v = 0;
             if (peek != Tag.POINT.ch) {
@@ -160,7 +150,9 @@ public class Lexer {
             float x = v, d = 10;
             for (; ; ) {
                 readch();
-                if (!Character.isDigit(peek)) break;
+                if (!Character.isDigit(peek)) {
+                    break;
+                }
                 x = x + Character.digit(peek, 10) / d;
                 d = d * 10;
             }
@@ -174,14 +166,14 @@ public class Lexer {
                 readch();
             } while (Character.isLetterOrDigit(peek) || peek == Tag.UNDER_LINE.ch);
             String result = b.toString();
-            if(cacheToken.containsKey(result)){
+            if (cacheToken.containsKey(result)) {
                 return cacheToken.get(result);
-            } else{
+            } else {
                 return new Word(result);
             }
         }
         //字符串
-        if(peek == Tag.D_MARK.ch){
+        if (peek == Tag.D_MARK.ch) {
             readch();
             StringBuilder b = new StringBuilder();
             do {
@@ -192,14 +184,15 @@ public class Lexer {
             return new Str(b.toString());
         }
         //字符
-        if(peek == Tag.MARK.ch){
+        if (peek == Tag.MARK.ch) {
             readch();
             char ch = peek;
             readch(Tag.MARK.ch);
             return new Ch(ch);
         }
         peek = ' ';
-        return new Token(null);
+        reader.close();
+        return new Token(Tag.EOF);
     }
 
 }

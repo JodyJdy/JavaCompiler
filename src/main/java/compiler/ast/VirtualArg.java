@@ -1,7 +1,5 @@
 package compiler.ast;
 
-import compiler.parser.Type;
-
 /**
  * 函数形参
  */
@@ -18,5 +16,13 @@ public class VirtualArg {
     public VirtualArg(Type type, String var) {
         this.type = type;
         this.var = var;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public String getVar() {
+        return var;
     }
 }

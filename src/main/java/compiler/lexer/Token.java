@@ -5,8 +5,7 @@ package compiler.lexer;
 import compiler.enums.Tag;
 
 /**
- * @author
- * @date 2021/12/18
+ * token
  **/
 
 public class Token {
@@ -18,6 +17,13 @@ public class Token {
     @Override
     public String toString() {
         return tag.toString();
+    }
+
+    public static Token tagToken(Tag tag){
+        return new Token(tag);
+    }
+    public static Token wordToken(String word){
+        return new Word(word);
     }
 
 }

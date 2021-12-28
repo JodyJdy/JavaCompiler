@@ -5,8 +5,7 @@ package compiler.lexer;
 import compiler.enums.Tag;
 
 /**
- * @author
- * @date 2021/12/18
+    整型数字
  **/
 
 public class Num extends Token {
@@ -14,5 +13,10 @@ public class Num extends Token {
     public Num(int num) {
         super(Tag.NUM);
         this.num = num;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(num);
     }
 }

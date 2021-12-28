@@ -2,6 +2,9 @@
 
 package compiler.enums;
 
+/**
+ * 标签枚举
+ */
 public enum Tag {
     /**
      * 导入
@@ -38,7 +41,7 @@ public enum Tag {
     /**
      * 运算符 && || ! > >= == <= < != = + - * / & | ^ >> << . ++ --
      */
-    AND("&&"),OR("||"),NOT('!'),GI('>'),GE(">="),EQ("=="),
+    AND("&&"),OR("||"),NOT('!'), GT('>'),GE(">="),EQ("=="),
     LE("<="),LI('<'),NE("!="),ASSIGN('='),ADD('+'),SUB('-'),MUL('*'),DIV('/')
     ,BITAND('&'),BITOR('|'),XOR('^'),BITNOT('~'),LSHIFT("<<"),RSHIFT(">>"),POINT('.'),ADDADD("++"),SUBSUB("--"),MOD('%'),
     /**
@@ -56,7 +59,11 @@ public enum Tag {
     /**
      * 含有语义的量
      */
-     ID,NUM,REAL,STR,CH;
+     ID,NUM,REAL,STR,CH,
+    /**
+     * 程序结尾标记
+     */
+    EOF;
 
     private String str = null;
     public Character ch = null;

@@ -13,7 +13,7 @@ public class FieldDeclare extends Node {
     /**
      * 类型声明
      */
-    private final Expr typeExpr;
+    private final Type typeExpr;
     /**
      * 变量名
      */
@@ -22,11 +22,36 @@ public class FieldDeclare extends Node {
      * 如果声明带有初始值
      */
     private final Expr initValue;
+    /**
+     * 是否是静态的
+     */
+    private final boolean isStatic;
 
-    public FieldDeclare(Tag access, Expr typeExpr, String varName, Expr initValue) {
+    public FieldDeclare(Tag access, Type typeExpr, String varName, Expr initValue, boolean isStatic) {
         this.access = access;
         this.typeExpr = typeExpr;
         this.varName = varName;
         this.initValue = initValue;
+        this.isStatic = isStatic;
+    }
+
+    public Tag getAccess() {
+        return access;
+    }
+
+    public Type getTypeExpr() {
+        return typeExpr;
+    }
+
+    public String getVarName() {
+        return varName;
+    }
+
+    public Expr getInitValue() {
+        return initValue;
+    }
+
+    public boolean isStatic() {
+        return isStatic;
     }
 }

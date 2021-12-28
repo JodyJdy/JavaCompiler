@@ -5,8 +5,7 @@ package compiler.lexer;
 import compiler.enums.Tag;
 
 /**
- * @author
- * @date 2021/12/18
+ * 浮点数字
  **/
 
 public class Real extends Token {
@@ -14,5 +13,10 @@ public class Real extends Token {
     public Real(float value) {
         super(Tag.REAL);
         this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
     }
 }

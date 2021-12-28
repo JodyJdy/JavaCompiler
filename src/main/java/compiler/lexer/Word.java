@@ -5,8 +5,7 @@ package compiler.lexer;
 import compiler.enums.Tag;
 
 /**
- * @author
- * @date 2021/12/18
+   读取到的一个词语，标识符就是一个Word
  **/
 
 public class Word extends Token {

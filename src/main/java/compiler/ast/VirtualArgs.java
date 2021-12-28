@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 函数形参
+ * 函数形参列表
  */
 public class VirtualArgs extends Node {
     private final List<VirtualArg> virtualArgs;
@@ -14,5 +14,9 @@ public class VirtualArgs extends Node {
     }
     public VirtualArgs(){
         this.virtualArgs = new ArrayList<>();
+    }
+
+    public List<VirtualArg> getVirtualArgs() {
+        return virtualArgs;
     }
 }
