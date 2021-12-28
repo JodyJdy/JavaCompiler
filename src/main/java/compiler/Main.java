@@ -20,6 +20,7 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
+        //resource的路径
         String classPath = "";
         loadPackage(classPath, null);
         classPreProcess(classPath);
