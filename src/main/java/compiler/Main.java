@@ -4,6 +4,7 @@ package compiler;
 
 import compiler.ast.ClassNode;
 import compiler.ast.MethodDeclare;
+import compiler.bytecode.ByteCode;
 import compiler.ir.IRGenerator;
 import compiler.lexer.Lexer;
 import compiler.parser.PackageLoader;
@@ -21,7 +22,7 @@ public class Main {
 
     public static void main(String[] args) {
         //resource的路径
-        String classPath = "";
+        String classPath = "src/main/resources";
         loadPackage(classPath, null);
         classPreProcess(classPath);
         classProcess();
@@ -109,6 +110,7 @@ public class Main {
             if (node.getStaticMethod() != null && node.getStaticMethod().getStmt() != null) {
                 irGenerator.visit(node.getStaticMethod());
             }
+
 
         }));
     }
