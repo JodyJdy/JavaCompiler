@@ -56,15 +56,22 @@ public class IRGenerator {
         expr.generate(this);
         exprLevel--;
     }
-    private void transToExpr(LogicExpr logicExpr){
+    private void transToExpr(LogicExpr logicExpr,boolean notExpr){
         Label trueLabel = new Label();
         Label falseLabel = new Label();
         exprLevel++;
         logicExpr.generator(this,trueLabel,falseLabel);
         exprLevel--;
         Label endLabel = new Label();
-        boolNeedStore(trueLabel,falseLabel,endLabel);
-
+        //非运算
+        if(notExpr){
+            boolNeedStore(falseLabel, trueLabel, endLabel);
+        } else {
+            boolNeedStore(trueLabel, falseLabel, endLabel);
+        }
+    }
+    private void transToExpr(LogicExpr logicExpr){
+      transToExpr(logicExpr,false);
     }
 
     private void transToStmt(LogicExpr logicExpr,Label trueLabel,Label falseLabel){
@@ -658,9 +665,9 @@ public class IRGenerator {
     public void visit(NotExpr notExpr,Label trueLabel,Label falseLabel){
         LogicExpr expr = (LogicExpr) notExpr.getExpr1();
         if(isStatement()){
-            transToStmt(expr,trueLabel,falseLabel);
+            transToStmt(expr,falseLabel,trueLabel);
         } else{
-            transToExpr(expr);
+            transToExpr(expr,true);
         }
 
     }
